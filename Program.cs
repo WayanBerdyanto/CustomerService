@@ -141,8 +141,43 @@ app.MapPut("/users/updatebalance", async (IUsers userDal, UserUpdateBalanceDTO u
 {
     try
     {
-        await userDal.UpdateBalancekAsync(userDto.UserName, userDto.Balance);
+        await userDal.UpdateBalanceAsync(userDto.UserName, userDto.Balance);
         return Results.Ok(new { Message = "Users Balance updated successfully" });
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { Message = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { Message = "An error occurred while updating the Users Balance", Error = ex.Message });
+    }
+});
+
+
+app.MapPut("/users/updateBackBalance", async (IUsers userDal, UserUpdateBalanceDTO userDto) =>
+{
+    try
+    {
+        await userDal.UpdateBackBalanceAsync(userDto.UserName, userDto.Balance);
+        return Results.Ok(new { Message = "Users Balance updated successfully" });
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { Message = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { Message = "An error occurred while updating the Users Balance", Error = ex.Message });
+    }
+});
+
+app.MapPut("/users/topUpBackBalance", async (IUsers userDal, UserUpdateBalanceDTO userDto) =>
+{
+    try
+    {
+        await userDal.TopUpBalanceAsync(userDto.UserName, userDto.Balance);
+        return Results.Ok(new { Message = "TopUp Balance updated successfully" });
     }
     catch (ArgumentException ex)
     {

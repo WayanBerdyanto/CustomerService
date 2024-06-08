@@ -14,7 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace CustomerService.DAL
 {
-public class UserDAL : IUsers
+    public class UserDAL : IUsers
     {
         private readonly IConfiguration _config;
         private readonly Connect _conn;
@@ -58,14 +58,43 @@ public class UserDAL : IUsers
                 return users;
             }
         }
-
-        public Users GetByName(string name)
+        public async Task<Users> GetByNameAsync(string name)
         {
             using (SqlConnection conn = _conn.GetConnectDb())
             {
                 var strSql = @"SELECT * FROM Users  WHERE UserName = @UserName";
                 var param = new { UserName = name };
                 var user = conn.QuerySingleOrDefault<Users>(strSql, param);
+                if (user == null)
+                {
+                    throw new ArgumentException("Data tidak ditemukan");
+                }
+                try
+                {
+                    int rowsAffected = await conn.ExecuteAsync(strSql, param);
+                    if (rowsAffected == 0)
+                    {
+                        throw new InvalidOperationException("Tidak ada baris yang diupdate.");
+                    }
+                    return user;
+                }
+                catch (SqlException sqlEx)
+                {
+                    throw new ArgumentException($"Error: {sqlEx.Message} - {sqlEx.Number}");
+                }
+                catch (Exception ex)
+                {
+                    throw new ArgumentException($"Error: {ex.Message}");
+                }
+            }
+        }
+        public Users GetByName(string name)
+        {
+            using (SqlConnection conn = _conn.GetConnectDb())
+            {
+                var strSql = @"SELECT * FROM Users  WHERE UserName = @UserName";
+                var param = new { UserName = name };
+                var user = conn.QueryFirstOrDefault<Users>(strSql, param);
                 if (user == null)
                 {
                     throw new ArgumentException("Data tidak ditemukan");
@@ -97,7 +126,7 @@ public class UserDAL : IUsers
             }
         }
 
-        public async Task UpdateBalancekAsync(string username, decimal balance)
+        public async Task UpdateBalanceAsync(string username, decimal balance)
         {
             using (SqlConnection conn = _conn.GetConnectDb())
             {
@@ -106,6 +135,64 @@ public class UserDAL : IUsers
                 {
                     UserName = username,
                     Price = balance
+                };
+                try
+                {
+                    int rowsAffected = await conn.ExecuteAsync(strSql, param);
+                    if (rowsAffected == 0)
+                    {
+                        throw new InvalidOperationException("Tidak ada baris yang diupdate.");
+                    }
+                }
+                catch (SqlException sqlEx)
+                {
+                    throw new ArgumentException($"Error: {sqlEx.Message} - {sqlEx.Number}");
+                }
+                catch (Exception ex)
+                {
+                    throw new ArgumentException($"Error: {ex.Message}");
+                }
+            }
+        }
+
+        public async Task UpdateBackBalanceAsync(string username, decimal balance)
+        {
+            using (SqlConnection conn = _conn.GetConnectDb())
+            {
+                var strSql = @"UPDATE Users SET Balance = Balance + @Price WHERE UserName = @UserName";
+                var param = new
+                {
+                    UserName = username,
+                    Price = balance
+                };
+                try
+                {
+                    int rowsAffected = await conn.ExecuteAsync(strSql, param);
+                    if (rowsAffected == 0)
+                    {
+                        throw new InvalidOperationException("Tidak ada baris yang diupdate.");
+                    }
+                }
+                catch (SqlException sqlEx)
+                {
+                    throw new ArgumentException($"Error: {sqlEx.Message} - {sqlEx.Number}");
+                }
+                catch (Exception ex)
+                {
+                    throw new ArgumentException($"Error: {ex.Message}");
+                }
+            }
+        }
+
+        public async Task TopUpBalanceAsync(string username, decimal balance)
+        {
+            using (SqlConnection conn = _conn.GetConnectDb())
+            {
+                var strSql = @"UPDATE Users SET Balance = Balance + @Amount WHERE UserName = @UserName";
+                var param = new
+                {
+                    UserName = username,
+                    Amount = balance
                 };
                 try
                 {
@@ -149,7 +236,7 @@ public class UserDAL : IUsers
             {
                 var strSql = @"UPDATE Users SET Password =  @Password, FullName = @FullName";
                 string hashedPassword = BCrypt.Net.BCrypt.HashPassword(obj.Password);
-                var param = new { UserName = obj.UserName, Password = hashedPassword, FullName = obj.FullName};
+                var param = new { UserName = obj.UserName, Password = hashedPassword, FullName = obj.FullName };
                 try
                 {
                     conn.Execute(strSql, param);
