@@ -51,9 +51,9 @@ app.MapGet("/users", (IUsers user) =>
     return Results.Ok(user.GetAll());
 });
 
-app.MapGet("/users/{name}", (IUsers user, string name) =>
+app.MapGet("/users/{username}", (string username, IUsers user) =>
 {
-    var users = user.GetByName(name);
+    var users = user.GetByName(username);
     if (users == null)
     {
         return Results.NotFound();
@@ -138,6 +138,23 @@ app.MapPost("/login", async (IUsers user, Users login) =>
 
 
 app.MapPut("/users/updatebalance", async (IUsers userDal, UserUpdateBalanceDTO userDto) =>
+{
+    try
+    {
+        await userDal.UpdateBalanceAsync(userDto.UserName, userDto.Balance);
+        return Results.Ok(new { Message = "Users Balance updated successfully" });
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { Message = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { Message = "An error occurred while updating the Users Balance", Error = ex.Message });
+    }
+});
+
+app.MapPut("/users/updateShippingBalance", async (IUsers userDal, UserUpdateBalanceDTO userDto) =>
 {
     try
     {

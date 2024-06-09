@@ -58,23 +58,17 @@ namespace CustomerService.DAL
                 return users;
             }
         }
-        public async Task<Users> GetByNameAsync(string name)
+        public IEnumerable<Users> GetByNameAsync(string username)
         {
             using (SqlConnection conn = _conn.GetConnectDb())
             {
-                var strSql = @"SELECT * FROM Users  WHERE UserName = @UserName";
-                var param = new { UserName = name };
-                var user = conn.QuerySingleOrDefault<Users>(strSql, param);
-                if (user == null)
-                {
-                    throw new ArgumentException("Data tidak ditemukan");
-                }
                 try
                 {
-                    int rowsAffected = await conn.ExecuteAsync(strSql, param);
-                    if (rowsAffected == 0)
+                    var strSql = @"SELECT * FROM Users  WHERE UserName = @UserName";
+                    var user = conn.Query<Users>(strSql);
+                    if (user == null)
                     {
-                        throw new InvalidOperationException("Tidak ada baris yang diupdate.");
+                        throw new ArgumentException("Data tidak ditemukan");
                     }
                     return user;
                 }
@@ -88,12 +82,12 @@ namespace CustomerService.DAL
                 }
             }
         }
-        public Users GetByName(string name)
+        public Users GetByName(string username)
         {
             using (SqlConnection conn = _conn.GetConnectDb())
             {
                 var strSql = @"SELECT * FROM Users  WHERE UserName = @UserName";
-                var param = new { UserName = name };
+                var param = new { UserName = username };
                 var user = conn.QueryFirstOrDefault<Users>(strSql, param);
                 if (user == null)
                 {
@@ -135,6 +129,36 @@ namespace CustomerService.DAL
                 {
                     UserName = username,
                     Price = balance
+                };
+                try
+                {
+                    int rowsAffected = await conn.ExecuteAsync(strSql, param);
+                    if (rowsAffected == 0)
+                    {
+                        throw new InvalidOperationException("Tidak ada baris yang diupdate.");
+                    }
+                }
+                catch (SqlException sqlEx)
+                {
+                    throw new ArgumentException($"Error: {sqlEx.Message} - {sqlEx.Number}");
+                }
+                catch (Exception ex)
+                {
+                    throw new ArgumentException($"Error: {ex.Message}");
+                }
+            }
+        }
+
+        
+        public async Task UpdateBalanceShippingAsync(string username, decimal balance)
+        {
+            using (SqlConnection conn = _conn.GetConnectDb())
+            {
+                var strSql = @"UPDATE Users SET Balance = Balance - @ShippingCosts WHERE UserName = @UserName";
+                var param = new
+                {
+                    UserName = username,
+                    ShippingCosts = balance
                 };
                 try
                 {

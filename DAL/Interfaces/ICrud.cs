@@ -8,7 +8,7 @@ namespace CustomerService.DAL.Interfaces
     public interface ICrud<T>
     {
         IEnumerable<T> GetAll();
-        T GetByName(string name);
+        T GetByName(string username);
         void Insert(T obj);
         void Update(T obj);
         void Delete(int id);
